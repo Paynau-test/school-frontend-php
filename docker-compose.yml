@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: school-frontend-php
+    ports:
+      - "8081:80"
+    environment:
+      - APP_KEY=base64:c3VwZXJzZWNyZXRrZXlmb3JsYXJhdmVsYXBwMTIzNA==
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - API_BASE_URL=http://host.docker.internal:3002
+    restart: unless-stopped
