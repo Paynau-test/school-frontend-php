@@ -9,9 +9,20 @@ class ScoresController extends Controller
 {
     public function index(Request $request)
     {
-        $scores  = [];
-        $error   = null;
+        $api = new ApiClient();
+
+        // Load grades for dropdown
+        $gradesResult = $api->getGrades();
+        $grades = ($gradesResult['success'] ?? false) ? $gradesResult['data'] : [];
+
+        // Load students for dropdown
+        $studentsResult = $api->searchStudents('', 'active');
+        $students = ($studentsResult['success'] ?? false) ? $studentsResult['data'] : [];
+
+        $scores   = [];
+        $error    = null;
         $searched = false;
+        $selectedStudent = null;
 
         $filters = [
             'studentId' => $request->get('studentId', ''),
@@ -20,10 +31,9 @@ class ScoresController extends Controller
             'month'     => $request->get('month', date('n')),
         ];
 
-        // Only search if we have the required params
+        // Search if we have all required params
         if ($filters['studentId'] && $filters['gradeId'] && $filters['month']) {
             $searched = true;
-            $api = new ApiClient();
             $result = $api->getScores(
                 (int) $filters['studentId'],
                 (int) $filters['gradeId'],
@@ -34,11 +44,22 @@ class ScoresController extends Controller
             if ($result['success'] ?? false) {
                 $scores = $result['data'] ?? [];
             } else {
-                $error = $result['message'] ?? 'Error fetching scores';
+                $error = $result['message'] ?? 'Error al consultar calificaciones';
+            }
+
+            // Find the selected student name
+            foreach ($students as $s) {
+                if ($s['id'] == $filters['studentId']) {
+                    $selectedStudent = $s;
+                    break;
+                }
             }
         }
 
-        return view('scores.index', compact('scores', 'filters', 'error', 'searched'));
+        return view('scores.index', compact(
+            'scores', 'filters', 'error', 'searched',
+            'grades', 'students', 'selectedStudent'
+        ));
     }
 
     public function store(Request $request)

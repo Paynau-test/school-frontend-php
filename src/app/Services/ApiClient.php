@@ -36,6 +36,36 @@ class ApiClient
     }
 
     /**
+     * GET /students/search
+     */
+    public function searchStudents(string $term = '', string $status = 'active'): array
+    {
+        $token = Session::get('jwt_token');
+
+        $response = Http::withToken($token)
+            ->get("{$this->baseUrl}/students/search", [
+                'term'   => $term,
+                'status' => $status,
+                'limit'  => 50,
+            ]);
+
+        return $response->json() ?? ['success' => false, 'data' => []];
+    }
+
+    /**
+     * GET /grades
+     */
+    public function getGrades(): array
+    {
+        $token = Session::get('jwt_token');
+
+        $response = Http::withToken($token)
+            ->get("{$this->baseUrl}/grades");
+
+        return $response->json() ?? ['success' => false, 'data' => []];
+    }
+
+    /**
      * GET /scores with query params.
      */
     public function getScores(int $studentId, int $gradeId, int $year, int $month): array

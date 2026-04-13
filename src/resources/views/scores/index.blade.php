@@ -8,32 +8,52 @@
     <div class="col-12 mb-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title mb-3">Buscar Calificaciones</h5>
+                <h5 class="card-title mb-3">Consultar Calificaciones</h5>
                 <form method="GET" action="/scores" class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label">ID Alumno</label>
-                        <input type="number" name="studentId" class="form-control"
-                               value="{{ $filters['studentId'] }}" min="1" required>
+                    <div class="col-md-4">
+                        <label class="form-label">Alumno (buscar por ID o nombre)</label>
+                        <select name="studentId" id="studentSelect" class="form-select" required>
+                            <option value="">Escriba ID o nombre del alumno...</option>
+                            @foreach($students as $student)
+                                <option value="{{ $student['id'] }}"
+                                    data-grade="{{ $student['gradeId'] }}"
+                                    {{ $filters['studentId'] == $student['id'] ? 'selected' : '' }}>
+                                    #{{ $student['id'] }} — {{ $student['lastNameFather'] }} {{ $student['lastNameMother'] }}, {{ $student['firstName'] }}
+                                    ({{ ucfirst($student['gradeName']) }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Grado</label>
-                        <input type="number" name="gradeId" class="form-control"
-                               value="{{ $filters['gradeId'] }}" min="1" required>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Año</label>
-                        <input type="number" name="year" class="form-control"
-                               value="{{ $filters['year'] }}" min="2020" max="2030">
+                        <select name="gradeId" class="form-select" required>
+                            <option value="">-- Seleccionar grado --</option>
+                            @foreach($grades as $grade)
+                                <option value="{{ $grade['id'] }}"
+                                    {{ $filters['gradeId'] == $grade['id'] ? 'selected' : '' }}>
+                                    {{ ucfirst($grade['name']) }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Mes</label>
                         <select name="month" class="form-select">
+                            @php
+                                $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                            @endphp
                             @for($m = 1; $m <= 12; $m++)
                                 <option value="{{ $m }}" {{ (int)$filters['month'] === $m ? 'selected' : '' }}>
-                                    {{ DateTime::createFromFormat('!m', $m)->format('F') }}
+                                    {{ $meses[$m - 1] }}
                                 </option>
                             @endfor
                         </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Año</label>
+                        <input type="number" name="year" class="form-control"
+                               value="{{ $filters['year'] }}" min="2020" max="2030">
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">Buscar</button>
@@ -56,9 +76,16 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title mb-3">
-                    Materias del Alumno #{{ $filters['studentId'] }}
-                    <span class="text-muted fs-6">— Grado {{ $filters['gradeId'] }},
-                        {{ DateTime::createFromFormat('!m', $filters['month'])->format('F') }} {{ $filters['year'] }}
+                    @if($selectedStudent)
+                        {{ $selectedStudent['firstName'] }} {{ $selectedStudent['lastNameFather'] }} {{ $selectedStudent['lastNameMother'] }}
+                    @else
+                        Alumno #{{ $filters['studentId'] }}
+                    @endif
+                    <span class="text-muted fs-6">—
+                        @foreach($grades as $g)
+                            @if($g['id'] == $filters['gradeId']) {{ ucfirst($g['name']) }} @endif
+                        @endforeach
+                        · {{ $meses[(int)$filters['month'] - 1] }} {{ $filters['year'] }}
                     </span>
                 </h5>
 
@@ -78,7 +105,7 @@
                             <tbody>
                                 @foreach($scores as $score)
                                 <tr>
-                                    <form method="POST" action="/scores" class="score-form">
+                                    <form method="POST" action="/scores">
                                         @csrf
                                         <input type="hidden" name="studentId" value="{{ $filters['studentId'] }}">
                                         <input type="hidden" name="subjectId" value="{{ $score['subjectId'] }}">
@@ -86,9 +113,7 @@
                                         <input type="hidden" name="year" value="{{ $filters['year'] }}">
                                         <input type="hidden" name="month" value="{{ $filters['month'] }}">
 
-                                        <td>
-                                            <strong>{{ $score['subjectName'] }}</strong>
-                                        </td>
+                                        <td><strong>{{ $score['subjectName'] }}</strong></td>
                                         <td class="text-center">
                                             <input type="number" name="score"
                                                    class="form-control score-input mx-auto"
@@ -123,7 +148,25 @@
 
 @push('scripts')
 <script>
-    // Validate score 0-10 on input
+    $(document).ready(function() {
+        // Select2 on student dropdown
+        $('#studentSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Escriba ID o nombre del alumno...',
+            width: '100%'
+        });
+
+        // Auto-select grade when student changes
+        $('#studentSelect').on('change', function() {
+            var selected = $(this).find(':selected');
+            var gradeId = selected.data('grade');
+            if (gradeId) {
+                $('select[name="gradeId"]').val(gradeId);
+            }
+        });
+    });
+
+    // Validate score 0-10
     document.querySelectorAll('.score-input').forEach(input => {
         input.addEventListener('change', function() {
             let val = parseFloat(this.value);

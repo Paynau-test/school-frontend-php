@@ -34,7 +34,8 @@ COPY src/bootstrap/app.php ./bootstrap/app.php
 # Generate app key and set permissions
 RUN php artisan key:generate
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html
+RUN chmod -R 755 /var/www/html
 RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 80
