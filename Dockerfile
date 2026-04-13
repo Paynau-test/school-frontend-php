@@ -31,7 +31,10 @@ COPY src/app/Services/ ./app/Services/
 COPY src/resources/views/ ./resources/views/
 COPY src/bootstrap/app.php ./bootstrap/app.php
 
-# Permissions
+# Generate app key and set permissions
+RUN php artisan key:generate
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data
 RUN chown -R www-data:www-data storage bootstrap/cache
+RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 80
